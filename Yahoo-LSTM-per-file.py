@@ -281,7 +281,7 @@ verbosity = args.verbose
 save_model=args.save
 file_name_preferred=args.file_name
 
-tf.config.threading.set_inter_op_parallelism_threads(args.num_threads_inter)
+#tf.config.threading.set_inter_op_parallelism_threads(args.num_threads_inter)
     
 print('python version', sys.version_info)
 print('tf version', tf.__version__, 'keras version', keras.__version__)
