@@ -1,0 +1,20 @@
+pctile = 99.5
+split = 0.8
+validation_ratio = 0.1
+look_back = 24
+learning_rate = 0.001
+
+epochs = 20
+
+cv = 5
+n_iter = 3
+patience = 3
+min_delta = 0.0003
+
+param_distribs = {
+    "n_hidden": np.arange(1, 3).tolist(), # upto 2 hidden layers
+    "n_units": [48, 72, 96]  
+}
+
+
+
