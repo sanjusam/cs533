@@ -108,25 +108,46 @@ def baseline_model(input_shape, learning_rate):
         return model
     return build_model
 
+def get_deviations_mv(model, X, Y):
+    deviations = np.absolute(Y - model.predict(X))
+    print("Deviations Mins {}, Maxes {}".format(np.amin(deviations, axis=0), np.amax(deviations, axis=0)))    
+    return deviations
+
+def get_records_above_deviation_pctile_mv(model, X, Y, pctile=95):
+    deviations = get_deviations_mv(model, X, Y) # n_samples x n_features
+    pctileDeviations = np.percentile(deviations, q=pctile, axis=0) # 1 x n_features
+    print("Deviations {}th pctiles {}".format(pctile, pctileDeviations ))
     
+    deviations_above_threshold = deviations > pctileDeviations # n_samples x n_features
+    print("Shape of deviations above threshold matrix {}".format(deviations_above_threshold.shape))
+
+    predicted_labels = np.ndarray((deviations.shape[0], 1)) # n_samples x 1
+    predicted_labels_ref = deviations_above_threshold.any(axis = 1, out = predicted_labels, keepdims = True)
+    print("Any feature deviation > its {}th pctile deviation based is_anomaly labels {}"
+          .format(pctile, np.unique(predicted_labels_ref, return_counts = True)))
+    return predicted_labels_ref
+    
+def get_classification_metrics(actual, predicted):
+    return confusion_matrix(actual, predicted), precision_score(actual, predicted), \
+    recall_score(actual, predicted), f1_score(actual, predicted)
 
 ############## main #########################
 
 split = 0.8
 look_back = 24
 learning_rate = 0.001
-n_iter = 5
+n_iter = 10
 cv = 5
 batch_size=32
 early_stop_patience=3
-epochs=20
+epochs=25
 verbosity=0
 min_delta=0.0003
+pctile = 99.5
 
 param_distribs = {
-    "n_hidden": np.arange(1, 3).tolist(), # upto 1 hidden layers
-    #"n_units": np.arange(5,6).tolist() # 5 hidden layer units/neurons
-    "n_units" : [24, 48, 72, 96]
+    "n_hidden": np.arange(1, 5).tolist(), # upto 4 hidden layers
+    "n_units" : [24, 32, 40, 48, 56, 64, 72, 80, 88, 96]
 }
 
 
@@ -197,3 +218,16 @@ if not os.path.exists(modeldir):
 modelpath = modeldir + '/' + 'shuttle-lstm.h5'
 print("Saving model", modelpath )
 model.save(modelpath)        
+
+# get deviations for whole dataset and id records with deviations > pctile threshold and asign an is_anomaly label
+predictedLabels = get_records_above_deviation_pctile_mv(model, lookbackX, lookbackY[:, :-1], pctile)
+
+print("Shape of predicted labels {}".format(predictedLabels.shape))
+
+# actual is_anomaly labels in dataset
+actualLabels = (data[look_back:, labelColumnNum] != 0.0).astype('int')    
+print("Actual is_anomaly labels in data", np.unique(actualLabels, return_counts = True))
+
+# Compare calculated labels and actual labels to find confusion matrix, precision, recall, and F1
+conf_matrix, prec, recall, f1 = get_classification_metrics(actualLabels, predictedLabels)
+print("Confusion matrix \n{0}\nprecision {1:.5f}, recall {2:.5f}, f1 {3:.5f}".format(conf_matrix, prec, recall, f1))
