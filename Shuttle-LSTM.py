@@ -136,7 +136,7 @@ def get_classification_metrics(actual, predicted):
 split = 0.8
 look_back = 24
 learning_rate = 0.001
-n_iter = 10
+n_iter = 5
 cv = 5
 batch_size=32
 early_stop_patience=3
@@ -147,7 +147,7 @@ pctile = 99.5
 
 param_distribs = {
     "n_hidden": np.arange(1, 5).tolist(), # upto 4 hidden layers
-    "n_units" : [24, 32, 40, 48, 56, 64, 72, 80, 88, 96]
+    "n_units" : [24, 32, 48, 56, 80, 96]
 }
 
 
